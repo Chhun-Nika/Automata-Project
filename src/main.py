@@ -26,4 +26,18 @@ while True:
         clear_screen();
         designFA.designFA();
         input("Press Enter to exit...")
+    elif choice == '2':
+        clear_screen();
+        testInputString.testInputStringById();
+        input("Press Enter to exit...")
+    elif choice == '3':
+        clear_screen();
+        checkFAType.checkFAType();
+        input("Press Enter to exit...")
+    elif choice == '4':
+        clear_screen()
+        convertNFAtoDFA.convertNFAtoDFA()
+        input("Press Enter to exit...")
+    
+
 
