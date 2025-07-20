@@ -4,8 +4,6 @@
 
 This project implements a Finite Automata simulator with a graphical user interface (GUI). It allows users to design both Deterministic (DFA) and Nondeterministic Finite Automata (NFA), simulate input strings, convert NFAs to DFAs, minimize DFAs, and save automata data using a database. The project demonstrates practical applications of automata theory in programming.
 
-## How to Run the Project
-
 ## Setup Instructions
 
 ### 1. Clone the Repository
