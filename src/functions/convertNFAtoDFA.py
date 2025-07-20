@@ -1,6 +1,7 @@
 from prettytable import PrettyTable;
 import json;
 from db.dbConnection import get_connection;
+from datetime import datetime
 
 def convertNFAtoDFA():
     print("\n===== Converting Nondeterministic Finite Automata (NFA) to Deterministic Finite Automata (DFA) =====\n");
@@ -132,13 +133,12 @@ def convertNFAtoDFA():
             table.field_names = ["s.s"] + symbols_no_eps
             
             # loop every step to keep it link together 
-            for state in dfa_states:
+            for state in dfa_delta:
                 row = [state_name(state)]
                 for sym in symbols_no_eps:
-                    target = dfa_delta.get(tuple(sorted(state)), {}).get(sym, set())
+                    target = dfa_delta[state].get(sym, set())
                     row.append(state_name(target) if target else "∅")
                 table.add_row(row)
-
 
             print(f"\nConvert NFA to DFA:\n#{step_number} step:")
             print(table)
@@ -186,9 +186,177 @@ def convertNFAtoDFA():
         dfa_table.add_row([symbol_json, state_json, transition_json])
         print("\n===== Here is the DFA converted from your NFA =====\n")
         print(dfa_table)
+
+        # ask user whether they want to minimize DFA or not 
+        NameOfFA = input("Enter the Name of DFA minimization: ")
+
+        save_confirm = input(f"Do you want to save this minimize DFA '{NameOfFA}' to the database? (y/n): ").lower()
+        if save_confirm != 'y':
+            print("DFA not saved.")
+            return 
+        
+        # count the number of state and symbol by using len 
+        num_states = len(json.loads(state_json))
+        num_symbols = len(json.loads(symbol_json))
+        
+        # save to database
+        conn = get_connection()
+        if conn: 
+            cursor = conn.cursor()
+            try:
+                cursor.execute("""
+                    INSERT INTO finiteAutomata (faName, numberOfState , numberOfSymbol , symbol, state, transition, faType, createdAt)
+                            VALUES (%s, %s , %s, %s, %s, %s, %s, %s)""", (
+                                NameOfFA,
+                                num_states,
+                                num_symbols,
+                                symbol_json,
+                                state_json,
+                                transition_json,
+                                'DFA',
+                                datetime.now()
+                            ))
+                conn.commit()
+                print("DFA save to database")
+
+            except Exception as e:
+                print("Error While Loading to Database", e)
+            finally:
+                cursor.close()
+                conn.close()
                 
     except Exception as e:
         print("Error While Loading NAF Data", e);
     finally:
         cursor.close()
         conn.close()
+
+def convert_nfa_to_dfa_web(fa_id):
+    from db.dbConnection import get_connection
+    from datetime import datetime
+    import json
+
+    conn = get_connection()
+    nfa_table = []
+    dfa_table = []
+    result = None
+
+    if not conn:
+        return None, None, "❌ Could not connect to database"
+
+    try:
+        with conn.cursor(dictionary=True) as cursor:
+            cursor.execute("SELECT * FROM finiteAutomata WHERE id = %s AND faType = 'NFA'", (fa_id,))
+            fa = cursor.fetchone()
+
+            if not fa:
+                return None, None, f"❌ No NFA found with ID {fa_id}"
+
+            symbols = json.loads(fa["symbol"])
+            raw_states = json.loads(fa["state"])
+            nfa_transitions = json.loads(fa["transition"])
+            start_state = raw_states[0].replace("*", "")
+            nfa_finals = {s.replace("*", "") for s in raw_states if "*" in s}
+
+            # Build NFA transition table
+            nfa_table.append(["State"] + symbols)
+            for state in raw_states:
+                row = [state]
+                for sym in symbols:
+                    targets = nfa_transitions.get(state.replace("*", ""), {}).get(sym, "∅")
+                    if isinstance(targets, list):
+                        targets = ",".join(targets)
+                    elif not targets:
+                        targets = "∅"
+                    row.append(targets)
+                nfa_table.append(row)
+
+            # ε-closure helper
+            def epsilon_closure(state_set):
+                closure = set(state_set)
+                stack = list(state_set)
+                while stack:
+                    q = stack.pop()
+                    for nxt in nfa_transitions.get(q, {}).get("ε", []):
+                        if nxt not in closure:
+                            closure.add(nxt)
+                            stack.append(nxt)
+                return closure
+
+            # Start DFA construction
+            symbols_no_eps = [s for s in symbols if s != "ε"]
+            dfa_states = []
+            dfa_unmarked = []
+            dfa_delta = {}
+
+            first = epsilon_closure({start_state})
+            dfa_states.append(first)
+            dfa_unmarked.append(first)
+
+            while dfa_unmarked:
+                curr = dfa_unmarked.pop(0)
+                curr_key = tuple(sorted(curr))
+                dfa_delta[curr_key] = {}
+
+                for sym in symbols_no_eps:
+                    dest = set()
+                    for q in curr:
+                        dest.update(nfa_transitions.get(q, {}).get(sym, []))
+                    dest_cl = epsilon_closure(dest)
+                    dfa_delta[curr_key][sym] = dest_cl
+                    if dest_cl and dest_cl not in dfa_states:
+                        dfa_states.append(dest_cl)
+                        dfa_unmarked.append(dest_cl)
+
+            # Mapping for state name → formatted string
+            def format_state(state_set):
+                if not state_set:
+                    return "∅"
+                label = "[" + ", ".join(sorted(state_set)) + "]"
+                if any(s in nfa_finals for s in state_set):
+                    label += "*"
+                return label
+
+            dfa_table.append(["State"] + symbols_no_eps)
+            final_state_labels = []
+            transition_dict = {}
+
+            for state in dfa_states:
+                formatted = format_state(state)
+                row = [formatted]
+                transition_dict[formatted] = {}
+                for sym in symbols_no_eps:
+                    target = dfa_delta.get(tuple(state), {}).get(sym, set())
+                    target_label = format_state(target)
+                    row.append(target_label)
+                    transition_dict[formatted][sym] = target_label
+                if formatted.endswith("*"):
+                    final_state_labels.append(formatted)
+                dfa_table.append(row)
+
+            result = f"✅ NFA ID {fa_id} converted successfully."
+
+            # Save to DB (including finalStates)
+            cursor.execute("""
+                INSERT INTO finiteAutomata (faName, numberOfState, numberOfSymbol, symbol, state, finalStates, transition, faType, createdAt)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                f"{fa['faName']}_to_DFA",
+                len(dfa_states),
+                len(symbols_no_eps),
+                json.dumps(symbols_no_eps),
+                json.dumps([row[0] for row in dfa_table[1:]]),
+                json.dumps(final_state_labels),
+                json.dumps(transition_dict),
+                "DFA",
+                datetime.now()
+            ))
+            conn.commit()
+
+    except Exception as e:
+        result = f"❌ Conversion error: {e}"
+
+    finally:
+        conn.close()
+
+    return nfa_table, dfa_table, result

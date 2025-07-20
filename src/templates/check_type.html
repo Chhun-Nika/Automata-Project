@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Check FA Type</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inclusive+Sans:ital,wght@0,300..700;1,300..700&family=Madimi+One&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1rem;
+      margin-top: 6.5rem;
+    }
+
+    .form-card {
+      width: 100%;
+      max-width: 650px;
+      background-color: rgba(255, 255, 255, 0.96);
+      padding: 2.5rem;
+      border-radius: 1.75rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    }
+
+    body.dark-mode .form-card {
+      background-color: rgba(31, 41, 55, 0.95);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <img src="{{ url_for('static', filename='cadt_logo.png') }}" class="logo" alt="CADT Logo" />
+    <button class="toggle-btn" id="toggle-mode" title="Toggle Light/Dark Mode">🌓</button>
+  </header>
+
+  <!-- Main Section -->
+  <main>
+    <div class="form-card">
+      <h1 class="text-center fw-semibold mb-3" style="font-family: 'Madimi One'; color: var(--primary-color);">Check Finite Automaton Type</h1>
+      <p class="subtitle text-center text-muted mb-4">Check whether your FA is a <strong>DFA</strong> or <strong>NFA</strong> based on its transitions.</p>
+
+      <form method="POST">
+        <div class="mb-3">
+          <label for="fa_id" class="form-label fw-semibold">Enter FA ID</label>
+          <input type="number" name="fa_id" id="fa_id" class="form-control" aria-label="FA ID" placeholder="e.g., 1" required />
+        </div>
+        <!-- <button type="submit" class="btn btn-outline-primary w-100">Check FA Type</button> -->
+         <div class="text-center">
+           <div class="btn">
+             <button type="submit" class="btn btn-primary w-100" style="padding-left: 1.5rem; padding-right: 1.5rem; margin-bottom: 0rem;">Check FA Type</button>
+           </div>
+         </div>
+      </form>
+
+      {% if result %}
+        <div class="alert text-center mt-4 fs-5 
+          {% if 'DFA' in result %} alert-success 
+          {% elif 'NFA' in result %} alert-primary 
+          {% else %} alert-danger {% endif %}">
+          <strong>Result:</strong> {{ result }}
+        </div>
+      {% endif %}
+
+      <div class="text-center mt-2">
+        <a href="/" class="btn btn-outline-secondary" style="padding-left: 1.7rem; padding-right: 1.7rem;">Back to Home</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- Dark Mode Toggle -->
+  <script>
+    document.getElementById('toggle-mode').addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+    });
+  </script>
+</body>
+</html>
