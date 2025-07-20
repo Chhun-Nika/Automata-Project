@@ -1,12 +1,17 @@
-import mysql.connector;
+import mysql.connector
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
 
 def get_connection():
     try:
         conn = mysql.connector.connect(
-            host='localhost',
-            user='root',
-            password='nika@Ax99',
-            database='automata_db'
+            host=os.getenv('DB_HOST'),
+            user=os.getenv('DB_USER'),
+            password=os.getenv('DB_PASSWORD'),
+            database=os.getenv('DB_NAME')
         )
         return conn
     except mysql.connector.Error as err:
@@ -14,11 +19,10 @@ def get_connection():
         return None
     
 
-conn = get_connection();
-# Check if the database connection was successful
-if conn.is_connected():
-    print("Connected to the database successfully.");
+conn = get_connection()
+
+if conn and conn.is_connected():
+    print("Connected to the database successfully.")
 else:
-    print("Failed to connect to the database.");
-    exit(1);
-        
+    print("Failed to connect to the database.")
+    exit(1)

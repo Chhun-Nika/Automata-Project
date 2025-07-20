@@ -37,7 +37,15 @@ while True:
     elif choice == '4':
         clear_screen()
         convertNFAtoDFA.convertNFAtoDFA()
+        input("Press Enter to exit...");
+    elif choice == '5':
+        clear_screen()
+        minimizeDFA.minimizeDFA()
         input("Press Enter to exit...")
+    else:
+        print("\nPlease input the number between 0 and 5 !\n")
+        input("Press Enter to exit...")
+    
     
 
 

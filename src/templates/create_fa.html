@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Create Finite Automaton</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <link href="https://fonts.googleapis.com/css2?family=Inclusive+Sans:ital,wght@0,300..700;1,300..700&family=Madimi+One&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1rem;
+      margin-top: 6.5rem;
+    }
+    .form-card {
+      width: 100%;
+      max-width: 800px;
+      background-color: rgba(255, 255, 255, 0.96);
+      padding: 3rem;
+      border-radius: 2rem;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+    }
+    body.dark-mode .form-card {
+      background-color: rgba(31, 41, 55, 0.95);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <img src="{{ url_for('static', filename='cadt_logo.png') }}" class="logo" alt="CADT Logo" />
+    <button class="toggle-btn" id="toggle-mode" title="Toggle Light/Dark Mode">🌓</button>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <div class="form-card">
+      <h1 class="text-center fw-semibold mb-3" style="font-family: 'Madimi One'; color: var(--primary-color);">Design Finite Automaton</h1>
+      <p class="subtitle text-center text-muted mb-4">Fill out the form to define your FA</p>
+
+      <form method="POST" action="/create">
+        <input type="hidden" name="action" value="submit_fa" />
+        <div class="mb-3">
+          <label for="fa_name" class="form-label">FA Name</label>
+          <input type="text" id="fa_name" name="fa_name" class="form-control" placeholder="e.g., DFA_EmailValidator" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="num_states" class="form-label">Number of States</label>
+          <input type="number" id="num_states" name="num_states" class="form-control" min="1" required>
+          <small class="form-text text-muted">States will be named A, B, C, ...</small>
+        </div>
+
+        <div class="mb-3">
+          <label for="num_symbols" class="form-label">Number of Input Symbols</label>
+          <input type="number" id="num_symbols" name="num_symbols" class="form-control" min="1" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="symbols" class="form-label">Symbols (comma-separated)</label>
+          <input type="text" id="symbols" name="symbols" class="form-control" placeholder="e.g., a,b">
+        </div>
+
+        <div class="mb-3">
+          <label for="num_final_states" class="form-label">Number of Final States</label>
+          <input type="number" id="num_final_states" name="num_final_states" class="form-control" min="1" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="final_states" class="form-label">Final States (comma-separated, e.g., A,B)</label>
+          <input type="text" id="final_states" name="final_states" class="form-control" placeholder="e.g., B,C">
+        </div>
+
+        <div class="mb-3">
+          <label for="has_epsilon" class="form-label">Epsilon Transition?</label>
+          <select id="has_epsilon" name="has_epsilon" class="form-select">
+            <option value="n">No</option>
+            <option value="y">Yes</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Transition Table</label>
+          <div id="transition-table-container"></div>
+          <input type="hidden" id="transitions" name="transitions">
+          <small class="form-text text-muted">
+            For NFA, separate states with commas (e.g., A,B). Use '-' for no transition.
+          </small>
+        </div>
+
+        <button type="button" class="btn btn-outline-secondary w-100 mb-3" id="generate-table-btn">Generate Transition Table</button>
+        <button type="submit" class="btn btn-primary w-100 mt-2">Submit Automaton</button>
+      </form>
+
+      {% if message %}
+        <div class="alert alert-info text-center mt-3">{{ message }}</div>
+      {% endif %}
+    </div>
+  </main>
+
+  <script>
+    document.getElementById('toggle-mode').addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+    });
+
+    document.getElementById('generate-table-btn').addEventListener('click', function () {
+      const numStates = parseInt(document.getElementById('num_states').value);
+      const numSymbols = parseInt(document.getElementById('num_symbols').value);
+      const symbols = document.getElementById('symbols').value.split(',').map(s => s.trim()).filter(Boolean);
+      const finalStates = document.getElementById('final_states').value.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+      const container = document.getElementById('transition-table-container');
+      container.innerHTML = '';
+
+      if (!numStates || !numSymbols || symbols.length !== numSymbols) {
+        container.innerHTML = '<div class="text-danger">Please enter valid numbers and symbols first.</div>';
+        return;
+      }
+
+      const states = Array.from({ length: numStates }, (_, i) => String.fromCharCode(65 + i));
+      let html = '<table class="table table-bordered"><thead><tr><th>State</th>';
+      symbols.forEach(sym => html += `<th>${sym}</th>`);
+      html += '</tr></thead><tbody>';
+      states.forEach(state => {
+        const label = finalStates.includes(state) ? `${state}*` : state;
+        html += `<tr><td>${label}</td>`;
+        symbols.forEach(sym => {
+          html += `<td><input type="text" class="form-control form-control-sm" name="cell-${state}-${sym}" placeholder="Next state(s)"></td>`;
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    });
+
+    document.querySelector('form').addEventListener('submit', function () {
+      const numStates = parseInt(document.getElementById('num_states').value);
+      const numSymbols = parseInt(document.getElementById('num_symbols').value);
+      const symbols = document.getElementById('symbols').value.split(',').map(s => s.trim()).filter(Boolean);
+      const states = Array.from({ length: numStates }, (_, i) => String.fromCharCode(65 + i));
+      const transitions = {};
+      states.forEach(state => {
+        transitions[state] = {};
+        symbols.forEach(sym => {
+          const input = document.querySelector(`[name="cell-${state}-${sym}"]`);
+          transitions[state][sym] = input ? input.value.trim() : '';
+        });
+      });
+      document.getElementById('transitions').value = JSON.stringify(transitions);
+    });
+  </script>
+</body>
+</html>

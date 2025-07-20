@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Minimize DFA</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <link href="https://fonts.googleapis.com/css2?family=Inclusive+Sans:ital,wght@0,300..700;1,300..700&family=Madimi+One&display=swap" rel="stylesheet">
+  <style>
+    body {
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    main {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 3rem 1rem;
+      margin-top: 6rem;
+    }
+
+    .form-card {
+      max-width: 800px;
+      width: 100%;
+      background-color: rgba(255, 255, 255, 0.96);
+      padding: 2.5rem;
+      border-radius: 1.5rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    }
+
+    body.dark-mode {
+      background-color: #111827;
+      color: #f8fafc;
+    }
+
+    body.dark-mode .form-card {
+      background-color: rgba(31, 41, 55, 0.95);
+    }
+
+    body.dark-mode .header {
+      background-color: #1f2937;
+    }
+
+
+    .toggle-btn {
+      font-size: 1.5rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.3s;
+    }
+
+    .toggle-btn:hover {
+      transform: scale(1.2);
+    }
+
+    .transition-table {
+      margin-top: 2rem;
+    }
+
+    .diagram-preview img {
+      max-width: 100%;
+      border-radius: 12px;
+      margin-top: 1rem;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <img src="{{ url_for('static', filename='cadt_logo.png') }}" class="logo" alt="CADT Logo" />
+    <button class="toggle-btn" id="toggle-mode" title="Toggle Light/Dark Mode">🌓</button>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <div class="form-card">
+      <h1 class="text-center fw-semibold mb-3" style="font-family: 'Madimi One'; color: var(--primary-color);">Minimize DFA</h1>
+      <p class="text-center text-muted mb-4">Enter the ID of a DFA to minimize it</p>
+
+      <!-- Form -->
+      <form method="POST">
+        <div class="mb-3">
+          <label for="fa_id" class="form-label" style="font-family: 'Inclusive Sans';">DFA ID</label>
+          <input type="number" name="fa_id" id="fa_id" class="form-control" placeholder="e.g., 3" required />
+        </div>
+        <!-- <button type="submit" class="btn btn-danger w-100">Minimize</button> -->
+        <div class="text-center">
+           <div class="btn">
+             <button type="submit" class="btn btn-danger w-100" style="padding-left: 2rem; padding-right: 2rem; margin-bottom: 0rem;">Minimize</button>
+           </div>
+         </div>
+      </form>
+
+      <!-- Result Message -->
+      {% if result %}
+        <div class="alert alert-info text-center mt-4">{{ result }}</div>
+      {% endif %}
+
+      <!-- Original DFA Transition Table -->
+      {% if original_table %}
+        <div class="transition-table">
+          <h5 class="text-primary">Original DFA Transition Table</h5>
+          <table class="table table-bordered table-hover mt-3">
+            <thead class="table-light">
+              <tr>
+                {% for col in original_table[0] %}
+                  <th>{{ col }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in original_table[1:] %}
+                <tr>
+                  {% for cell in row %}
+                    <td>
+                      {% if cell == "-" or cell == "" %}
+                        <span class="text-muted">–</span>
+                      {% else %}
+                        {{ cell }}
+                      {% endif %}
+                    </td>
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+
+      <!-- Minimized DFA Transition Table -->
+      {% if table %}
+        <div class="transition-table">
+          <h5 class="text-success">Minimized DFA Transition Table</h5>
+          <table class="table table-bordered table-hover mt-3">
+            <thead class="table-light">
+              <tr>
+                {% for col in table[0] %}
+                  <th>{{ col }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in table[1:] %}
+                <tr>
+                  {% for cell in row %}
+                    <td>
+                      {% if "*" in cell %}
+                        <span class="badge bg-success text-wrap px-3 py-2">{{ cell }}</span>
+                      {% elif "[" in cell and "]" in cell %}
+                        <span class="text-primary fw-semibold">{{ cell }}</span>
+                      {% elif cell == "∅" or cell == "-" %}
+                        <span class="text-muted">∅</span>
+                      {% else %}
+                        {{ cell }}
+                      {% endif %}
+                    </td>
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+
+      <!-- Diagram Preview -->
+      {% if image_path %}
+        <div class="diagram-preview text-center mt-5">
+          <h5 class="text-info">DFA Diagram</h5>
+          <img src="{{ url_for('static', filename=image_path) }}" alt="Minimized DFA Diagram" />
+        </div>
+      {% endif %}
+
+      <!-- Back Button -->
+      <div class="text-center mt-2">
+        <a href="/" class="btn btn-outline-secondary">Back to Home</a>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const toggleBtn = document.getElementById('toggle-mode');
+    toggleBtn.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+      localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark-mode');
+      }
+    });
+  </script>
+</body>
+</html>

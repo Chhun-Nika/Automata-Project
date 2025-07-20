@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>FA Result</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+
+    body.dark-mode {
+      background-color: #1f2937;
+      color: #f0f0f0;
+    }
+
+    .header {
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      height: 40px;
+    }
+
+    .toggle-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    .diagram-container img {
+      max-width: 100%;
+      height: auto;
+      border: 2px solid #dee2e6;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+
+    body.dark-mode .diagram-container img {
+      border-color: #444;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header mb-4">
+    <img src="{{ url_for('static', filename='cadt_logo.png') }}" class="logo" alt="CADT Logo" />
+    <button class="toggle-btn" id="toggle-mode" title="Toggle Dark Mode">🌓</button>
+  </header>
+
+  <!-- Main Content -->
+  <div class="container">
+    <h1 class="text-center mb-4">🎉 Finite Automaton Created</h1>
+    <p class="text-center subtitle">Below is the transition table for <strong>{{ fa_name }}</strong></p>
+
+    <!-- Transition Table -->
+    <div class="table-responsive mb-5">
+      <table class="table table-bordered table-striped text-center">
+        <thead class="table-primary">
+          <tr>
+            <th>States</th>
+            {% for symbol in symbols %}
+              <th>{{ symbol }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in table %}
+            <tr>
+              {% for cell in row %}
+                <td>{{ cell }}</td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Diagram Image -->
+    {% if diagram_image %}
+    <div class="diagram-container text-center mt-5">
+      <h5 class="text-primary mb-3">📷 FA Transition Diagram</h5>
+      <img src="{{ url_for('static', filename='diagrams/' ~ diagram_image) }}"
+           alt="FA Diagram"
+           class="img-fluid rounded shadow mt-2"
+           style="max-width: 600px;" />
+    </div>
+    {% endif %}
+
+    <!-- Actions -->
+    <div class="text-center d-flex gap-3 justify-content-center flex-wrap mt-4">
+      <a href="/create" class="btn btn-outline-primary btn-lg">➕ Design Another FA</a>
+      <a href="/" class="btn btn-outline-secondary btn-lg">🏠 Back to Home</a>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('toggle-mode').addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+    });
+  </script>
+</body>
+</html>
