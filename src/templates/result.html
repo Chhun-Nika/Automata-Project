@@ -55,7 +55,7 @@
 
   <!-- Main Content -->
   <div class="container">
-    <h1 class="text-center mb-4">🎉 Finite Automaton Created</h1>
+    <h1 class="text-center mb-4">Finite Automaton Created</h1>
     <p class="text-center subtitle">Below is the transition table for <strong>{{ fa_name }}</strong></p>
 
     <!-- Transition Table -->
@@ -84,7 +84,7 @@
     <!-- Diagram Image -->
     {% if diagram_image %}
     <div class="diagram-container text-center mt-5">
-      <h5 class="text-primary mb-3">📷 FA Transition Diagram</h5>
+      <h5 class="text-primary mb-3">FA Transition Diagram</h5>
       <img src="{{ url_for('static', filename='diagrams/' ~ diagram_image) }}"
            alt="FA Diagram"
            class="img-fluid rounded shadow mt-2"
@@ -94,8 +94,8 @@
 
     <!-- Actions -->
     <div class="text-center d-flex gap-3 justify-content-center flex-wrap mt-4">
-      <a href="/create" class="btn btn-outline-primary btn-lg">➕ Design Another FA</a>
-      <a href="/" class="btn btn-outline-secondary btn-lg">🏠 Back to Home</a>
+      <a href="/create" class="btn btn-outline-primary btn-lg">Design Another FA</a>
+      <a href="/" class="btn btn-outline-secondary btn-lg">Back to Home</a>
     </div>
   </div>
 
