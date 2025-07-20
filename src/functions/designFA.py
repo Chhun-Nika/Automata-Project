@@ -1,9 +1,12 @@
+from datetime import datetime
+import json
+from db.dbConnection import get_connection
+
+
 
 def designFA ():
-    print("\nDesign Finite Automata");
+    print("\n===== Design Finite Automata =====");
     typeOfFA = 'DFA';
-
-    
 
     # check if number of states is greater than 0
     while True:
@@ -118,10 +121,72 @@ def designFA ():
     print("\nTransition Table:");
     print(table);
     print("\nType of Finite Automata: ", typeOfFA);
-    
-    
 
+    # input name of FA
+    NameOfFA = input("Enter a name for your Finite Automaton: ");
+
+    save_confirm = input(f"Do you want to save the FA '{NameOfFA}' to the database? (y/n): ").lower()
+    if save_confirm != 'y':
+        print("FA not saved.")
+        return 
+    
+    
+    
+    # Build transitions dict
+    transition_dict = {}
+
+    for i, state in enumerate(copy_all_states):
+        state_transitions = {}
+        for j, symbol in enumerate(symbols):
+            transition = transition_table[i][j]
+            if isinstance(transition, list):
+                # Multiple transitions (NFA)
+                state_transitions[symbol] = transition
+            else:
+                state_transitions[symbol] = transition
+        transition_dict[state] = state_transitions
+
+    # convert to json string 
+    json_symbols = json.dumps(symbols);
+    json_states = json.dumps(all_states);
+    json_transition = json.dumps(transition_dict);
+
+    # save to database 
+    conn = get_connection()
+    if conn:
+        cursor = conn.cursor()
+        try: 
+            cursor.execute ("""
+                INSERT INTO finiteAutomata (faName, numberOfState , numberOfSymbol , symbol, state, transition, faType, createdAt)
+                            VALUES (%s, %s , %s, %s, %s, %s, %s, %s)""", (
+                                NameOfFA,
+                                num_states,
+                                num_symbols,
+                                json_symbols,
+                                json_states,
+                                json_transition,
+                                typeOfFA,
+                                datetime.now()
+                            ))
+            conn.commit()
+            print("FA save to the Database");
         
-
-
-    
+            while True:
+                print("*** if you want to design more FA enter y, otherwise enter n ***")
+                choice = input("\nDo you want to design another Finite Automaton? (y/n): ").strip().lower()
+                if choice == 'y':
+                    designFA()  # call again
+                    break
+                elif choice == 'n':
+                    print("Done. Thank you for designing Finite Automata!")
+                    break
+                else:
+                    print("Invalid input. Please enter 'y' or 'n'.")
+        except Exception as e:
+            print("Error! cannot save FA to the Database", e);
+        finally:
+            cursor.close()
+            conn.close()
+        
+    else: 
+        print("Couldn't connect to the database.")
